@@ -1,0 +1,80 @@
+Project #1 Questions
+
+
+
+Phase 1:
+
+
+AD LAB — QUESTION BANK
+Phase 1: Networking, DNS, Domain Join
+
+--- Networking & DNS ---
+
+1. Why does AD-CL01 need to use AD-DC01 as its DNS server?
+
+2. Why is "ping works" not enough to prove domain join will succeed?
+
+3. What is APIPA, and what does a 169.254.x.x address tell you?
+
+4. Why must a domain controller have a static IP instead of DHCP?
+
+5. Why is a misconfiguration that works by luck more dangerous
+   than one that fails immediately?
+
+6. Explain the difference between 127.0.0.1 and the DC's LAN IP.
+   Why is 127.0.0.1 correct for the DC but wrong for the client?
+
+--- Domain Join ---
+
+7. What credentials does domain join require, and why?
+
+8. What changed on AD-CL01 after it joined the domain?
+
+9. What changed on AD-DC01 after AD-CL01 joined?
+
+10. If domain join failed, what would you check first, and in
+    what order?
+
+--- Windows Editions ---
+
+11. Why can Windows 10 Home not join a domain?
+
+12. What does that tell you about how Microsoft segments
+    consumer vs business Windows features?
+
+13. In a real help desk role, how would you catch this before
+    provisioning a machine for a new hire?
+
+
+Phase 2:
+
+14. What is an OU used for, and how is it different from a group?
+
+15. What is the difference between a user and a group?
+
+16. Why is group-based access better than assigning permissions
+    directly to individual users?
+
+17. Why did we move AD-CL01 out of the default Computers container
+    into a Workstations OU?
+
+18. What is the difference between a Security group and a
+    Distribution group?
+
+19. What does "Global" scope mean on a group, and what are the
+    other scopes?
+
+20. Why check "user must change password at next logon" when
+    creating an account?
+
+21. How would you explain new hire account creation to an
+    interviewer in 30 seconds?
+
+
+
+22. Why is the default Computers container a problem for Group Policy?
+23. What does AGDLP stand for and what problem does it solve?
+24. Why disable and move a terminated user instead of deleting them?
+25. What is a SID and why does it matter for permissions and logs?
+26. Why should an administrator never know a user's working password?
+

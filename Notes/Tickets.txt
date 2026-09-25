@@ -1,0 +1,29 @@
+Tickets
+
+### TICKET-004 — Employee Termination: Access Revocation
+
+**Priority:** High
+**Category:** Account Management / Offboarding
+
+**Request:**
+HR notified IT that Sarah Chen (schen, Sales) was terminated
+effective 2026-08-15. Requested immediate access revocation.
+
+**Actions taken:**
+1. Disabled account `schen` in ADUC (immediate access revocation)
+2. Removed from security group `Sales-SharedDrive-Access`
+3. Added description: "Terminated 2026-08-15 - ticket #1042"
+4. Moved user object to `Disabled Users` OU
+
+**Verification:**
+Attempted login as `adlab\schen` on AD-CL01 — authentication
+failed as expected.
+
+**Resolution:**
+Access revoked and verified. Account retained (not deleted) for
+audit and file-ownership purposes.
+
+**Notes / prevention:**
+Account disabled rather than deleted to preserve SID references
+in file permissions and audit logs. Recommend a 90-day retention
+period before deletion review.
