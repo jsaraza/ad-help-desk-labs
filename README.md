@@ -9,8 +9,7 @@ Every change in this lab was verified from the end user's side, not just from th
 admin console, and each task is written up as a help desk ticket — including the
 things that broke along the way.
 
-**Domain:** `adlab.local` · **Hypervisor:** Oracle VirtualBox · **Built:** May–Sept 2026
-
+**Domain:** `adlab.local` · **Hypervisor:** Oracle VirtualBox · 
 ---
 
 ## Architecture
