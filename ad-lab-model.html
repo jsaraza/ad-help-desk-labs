@@ -1,0 +1,1035 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>adlab.local | 3D Lab Twin</title>
+<style>
+  :root{--bg:#070c13;--panel:#0d1621;--line:#203244;--text:#e1edf7;--muted:#8ca3b8;--green:#55f5ad;--blue:#50bfff;--red:#ff566d}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px system-ui,sans-serif}
+  button,a{touch-action:manipulation}
+  button{font:inherit;color:inherit;cursor:pointer}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button:focus-visible,a:focus-visible{outline:2px solid var(--blue);outline-offset:4px}
+  a{color:var(--blue)}
+  header{min-height:86px;padding:18px 26px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:13px}
+  .logo{width:37px;height:37px;border:1px solid var(--green);border-radius:8px;display:grid;place-items:center;color:var(--green);box-shadow:0 0 22px #55f5ad16;font:22px monospace}
+  h1{font-size:20px;letter-spacing:-.5px;margin:0}
+  header p{margin:4px 0 0;font-size:11px;color:var(--muted);letter-spacing:1.4px;text-transform:uppercase}
+  .telemetry{margin-left:auto;display:flex;gap:26px;align-items:center}
+  .metric{font:11px monospace;color:var(--muted)}
+  .metric strong{display:block;font-size:18px;color:var(--text);margin-top:4px}
+  .badge{color:var(--green);font:11px monospace;border:1px solid #55f5ad44;background:#55f5ad0b;padding:8px 10px;border-radius:4px;white-space:nowrap}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 320px;min-height:530px;height:calc(100dvh - 290px)}
+  #viewport{position:relative;min-width:0;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#122237,#070c13 75%)}
+  #viewport canvas{display:block;width:100%;height:100%;touch-action:none}
+  #labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+  .node-label{position:absolute;top:0;left:0;transform:translate(-50%,-100%);pointer-events:auto;background:#0b1524ec;border:1px solid #35516a;border-radius:5px;padding:7px 12px;white-space:nowrap;box-shadow:0 5px 22px #0006}
+  .node-label strong{font:600 12px monospace;letter-spacing:1px}
+  .node-label span{display:block;font:10px monospace;color:var(--muted);margin-top:4px}
+  .node-label[aria-pressed="true"]{border-color:var(--blue);box-shadow:0 0 18px #50bfff25}
+  .node-label.isolated{border-color:var(--red)}
+  .scene-top{position:absolute;top:20px;left:22px;pointer-events:none}
+  .eyebrow{font:10px monospace;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted)}
+  .scene-top h2{font-size:15px;font-weight:500;margin:8px 0}
+  .legend{display:flex;gap:14px;font:10px monospace;color:var(--muted)}
+  .legend i{display:inline-block;width:6px;height:6px;border-radius:50%;margin-right:5px;background:var(--green)}
+  .legend .wan{background:var(--blue)}
+  .legend .blocked{background:var(--red)}
+  .scene-bottom{position:absolute;bottom:15px;left:20px;right:20px;display:flex;justify-content:space-between;align-items:center;gap:12px;color:var(--muted);font:11px monospace;pointer-events:none}
+  .scene-bottom button{pointer-events:auto;background:#101e2c;border:1px solid var(--line);border-radius:4px;padding:7px 10px;font:11px monospace}
+  #loading{position:absolute;inset:0;display:grid;place-content:center;text-align:center;padding:35px;color:var(--blue);background:#070c13e8;z-index:5}
+  #loading[hidden]{display:none}
+  aside{padding:22px 20px;background:var(--panel);border-left:1px solid var(--line);overflow:auto}
+  .section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .section-title h2{margin:0;font:11px monospace;letter-spacing:1.3px;text-transform:uppercase;color:var(--muted)}
+  .inventory{display:flex;gap:5px;margin-bottom:20px}
+  .inventory button{flex:1;padding:7px 3px;border:1px solid var(--line);border-radius:4px;background:#101e2b;font:10px monospace}
+  .inventory button[aria-pressed="true"]{border-color:var(--blue);color:var(--blue)}
+  #node-name{font-size:25px;margin:0 0 5px;letter-spacing:-.8px}
+  #node-status{font:11px monospace;color:var(--green)}
+  dl{display:grid;grid-template-columns:75px 1fr;gap:11px 10px;font-size:12px;margin:20px 0}
+  dt{color:var(--muted)}
+  dd{margin:0;overflow-wrap:anywhere}
+  #services{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 15px}
+  .chip{font:10px monospace;border:1px solid #2d455b;padding:5px 7px;border-radius:4px;color:#b9d6ec}
+  #node-note,.note{color:var(--muted);font-size:11px;line-height:1.6}
+  .divider{border:0;border-top:1px solid var(--line);margin:21px 0}
+  .actions{display:grid;gap:8px}
+  .actions button{text-align:left;padding:11px 12px;border:1px solid #2c4255;background:#122232;border-radius:5px;font-size:12px;transition:background .15s,border-color .15s}
+  .actions button:hover:enabled{background:#1a3042;border-color:var(--blue)}
+  .actions .danger{color:#ff9bab;border-color:#653342}
+  .actions .good{color:var(--green)}
+  .actions .blue{color:var(--blue)}
+  #action-status{min-height:32px;font:11px/1.5 monospace;color:var(--blue);margin:12px 0 0}
+  .source{display:block;margin-top:12px;font-size:11px;text-decoration:none}
+  footer{height:204px;border-top:1px solid var(--line);background:#080f18;padding:14px 22px;display:flex;flex-direction:column}
+  .log-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}
+  .log-heading h2{font:11px monospace;letter-spacing:1px;margin:0;color:var(--muted)}
+  .log-heading span{font:10px monospace;color:var(--green)}
+  #event-log{overflow:auto;flex:1;font:11px/1.75 ui-monospace,SFMono-Regular,Consolas,monospace;scrollbar-color:#30475d transparent}
+  .log-row{display:grid;grid-template-columns:77px 54px 1fr;gap:10px}
+  .log-row time{color:#71869b}
+  .log-row .level{color:var(--blue)}
+  .log-row.good .level{color:var(--green)}
+  .log-row.warn .level,.log-row.bad .level{color:var(--red)}
+  .log-row .message{overflow-wrap:anywhere}
+  @media(max-width:950px){
+    main{grid-template-columns:minmax(0,1fr) 280px}
+    .telemetry{gap:15px}
+    .metric.optional{display:none}
+  }
+  @media(max-width:700px){
+    header{padding:15px;gap:15px}
+    .telemetry{margin-left:0;width:100%;justify-content:space-between}
+    main{display:flex;flex-direction:column;height:auto;min-height:0}
+    #viewport{height:470px}
+    aside{border-left:0;border-top:1px solid var(--line);overflow:visible;padding:20px}
+    .actions{grid-template-columns:1fr 1fr}
+    .scene-top{top:15px;left:15px}
+    .scene-bottom{left:15px;right:15px;font-size:9px}
+    footer{height:225px;padding:14px 15px}
+    .node-label{padding:6px 8px}
+    .node-label span{font-size:9px}
+    .log-row{grid-template-columns:67px 42px 1fr;gap:6px}
+  }
+</style>
+
+<!-- Only external dependencies: pinned Three.js and its OrbitControls module. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.1/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo" aria-hidden="true">⌘</div>
+    <div>
+      <h1>adlab.local</h1>
+      <p>Active Directory / Digital twin</p>
+    </div>
+  </div>
+  <div class="telemetry">
+    <div class="metric optional">TOPOLOGY<strong>04 nodes</strong></div>
+    <div class="metric">CLIENT LINK<strong id="link-status">Connected</strong></div>
+    <div class="metric">FAILED LOGONS<strong id="failures">0</strong></div>
+    <span class="badge">● SIMULATION</span>
+  </div>
+</header>
+
+<main>
+  <section id="viewport" aria-label="Interactive 3D network topology">
+    <div id="labels"></div>
+    <div class="scene-top">
+      <div class="eyebrow">Network overview</div>
+      <h2>192.168.10.0/24</h2>
+      <div class="legend">
+        <span><i></i>LAN</span>
+        <span><i class="wan"></i>WAN</span>
+        <span><i class="blocked"></i>Isolated</span>
+      </div>
+    </div>
+    <div class="scene-bottom">
+      <span>
+        Drag: orbit · Scroll: zoom · Right-drag: pan<br>
+        Touch: drag to orbit · Pinch / two fingers to zoom / pan
+      </span>
+      <button id="reset-view" disabled>Reset view</button>
+    </div>
+    <div id="loading" role="status">Initializing 3D topology…</div>
+  </section>
+
+  <aside aria-label="Node inspector and simulation controls">
+    <div class="section-title">
+      <h2>Node inspector</h2>
+      <span class="eyebrow">Select a node</span>
+    </div>
+    <div class="inventory" aria-label="Select a network node">
+      <button data-node="DC01" disabled>DC01</button>
+      <button data-node="CL01" disabled>CL01</button>
+      <button data-node="FW01" disabled>Firewall</button>
+      <button data-node="INET" disabled>Internet</button>
+    </div>
+
+    <h2 id="node-name">DC01</h2>
+    <span id="node-status">Initializing</span>
+    <dl>
+      <dt>Hostname</dt><dd id="node-host">—</dd>
+      <dt>IP address</dt><dd id="node-ip">—</dd>
+      <dt>OS</dt><dd id="node-os">—</dd>
+      <dt>Role</dt><dd id="node-role">—</dd>
+      <dt>Domain</dt><dd id="node-domain">—</dd>
+    </dl>
+    <div class="eyebrow">Services / capabilities</div>
+    <div id="services"></div>
+    <p id="node-note"></p>
+
+    <hr class="divider">
+    <div class="section-title">
+      <h2>Simulation controls</h2>
+      <span class="eyebrow">Stub mode</span>
+    </div>
+    <div class="actions">
+      <button id="health" class="good" disabled>Check replication health</button>
+      <button id="attack" class="danger" disabled>Simulate brute-force logons</button>
+      <button id="isolate" class="danger" disabled>Isolate CL01</button>
+      <button id="gpo" class="blue" disabled>Push GPO update</button>
+    </div>
+    <p id="action-status" role="status" aria-live="polite">Loading scene…</p>
+    <p class="note">
+      Synthetic traffic and events only. One DC: the health animation represents
+      client connectivity; AD replication has no peer here.
+    </p>
+    <a class="source"
+       href="https://github.com/jsaraza/ad-help-desk-labs"
+       target="_blank" rel="noopener noreferrer">
+      ↗ Source: jsaraza/ad-help-desk-labs
+    </a>
+    <p class="note">
+      Adapted to the requested hostnames and Windows 11. The gateway and internet
+      extend the repository’s isolated lab; gateway addressing is unspecified.
+    </p>
+  </aside>
+</main>
+
+<footer>
+  <div class="log-heading">
+    <h2>EVENT STREAM / SOC CONSOLE</h2>
+    <span>SIMULATED · UTC · LAST 150 EVENTS</span>
+  </div>
+  <div id="event-log" role="log"
+       aria-label="Timestamped simulated event log"
+       aria-live="off" tabindex="0"></div>
+</footer>
+<noscript>This digital twin requires JavaScript and WebGL.</noscript>
+
+<script type="module">
+const $ = id => document.getElementById(id);
+
+// Bounded SOC event feed. Text-only DOM insertion keeps future API output safe.
+function log(message, level = 'info') {
+  const feed = $('event-log');
+  const follow = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 35;
+  const row = document.createElement('div');
+  row.className = `log-row ${level}`;
+
+  const time = document.createElement('time');
+  const tag = document.createElement('span');
+  const body = document.createElement('span');
+  const now = new Date();
+
+  time.dateTime = now.toISOString();
+  time.textContent = now.toISOString().slice(11, 19);
+  tag.className = 'level';
+  tag.textContent = {info:'INFO', good:'OK', warn:'WARN', bad:'ALERT'}[level];
+  body.className = 'message';
+  body.textContent = message;
+  row.append(time, tag, body);
+  feed.append(row);
+
+  while (feed.children.length > 150) feed.firstElementChild.remove();
+  if (follow) feed.scrollTop = feed.scrollHeight;
+}
+
+// Dynamic imports allow CDN/WebGL errors to appear in the dashboard.
+try {
+  const [THREE, {OrbitControls}] = await Promise.all([
+    import('three'),
+    import('three/addons/controls/OrbitControls.js')
+  ]);
+  init(THREE, OrbitControls);
+} catch (error) {
+  $('loading').hidden = false;
+  $('loading').textContent =
+    'Unable to start 3D. Check CDN access and enable WebGL, then reload.';
+  $('action-status').textContent = 'Scene unavailable.';
+  log(`Startup failed: ${error.message}`, 'bad');
+  console.error(error);
+}
+
+function init(THREE, OrbitControls) {
+  const C = {
+    green: 0x55f5ad,
+    blue: 0x50bfff,
+    red: 0xff566d,
+    metal: 0x142638
+  };
+  const viewport = $('viewport');
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x070c13, .022);
+
+  const camera = new THREE.PerspectiveCamera(46, 1, .1, 160);
+  const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.domElement.setAttribute(
+    'aria-label',
+    '3D topology; use the node buttons to inspect each machine.'
+  );
+  viewport.prepend(renderer.domElement);
+
+  const controls = new OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = .07;
+  controls.minDistance = 7;
+  controls.maxDistance = 32;
+  controls.maxPolarAngle = Math.PI / 2 - .08;
+
+  function resetView() {
+    camera.position.set(12, 13, 17);
+    controls.target.set(0, .5, -1.8);
+    controls.update();
+  }
+  resetView();
+
+  // Lighting and subtle SOC grid.
+  scene.add(new THREE.HemisphereLight(0xb8dcff, 0x10151f, 2));
+  const key = new THREE.DirectionalLight(0xd4e9ff, 3);
+  key.position.set(3, 10, 6);
+  scene.add(key);
+
+  const rim = new THREE.PointLight(C.blue, 35, 30);
+  rim.position.set(-5, 5, -6);
+  scene.add(rim);
+
+  const grid = new THREE.GridHelper(60, 60, 0x234159, 0x14283a);
+  grid.position.y = -.025;
+  grid.material.transparent = true;
+  grid.material.opacity = .5;
+  scene.add(grid);
+
+  const floor = new THREE.Mesh(
+    new THREE.PlaneGeometry(100, 100),
+    new THREE.MeshStandardMaterial({color:0x080f18, roughness:.95})
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -.04;
+  scene.add(floor);
+
+  // All visual assets are procedural: geometry plus this generated glow texture.
+  const glowCanvas = document.createElement('canvas');
+  glowCanvas.width = glowCanvas.height = 64;
+  const ctx = glowCanvas.getContext('2d');
+  const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gradient.addColorStop(0, '#fff');
+  gradient.addColorStop(.16, '#ffffffdd');
+  gradient.addColorStop(.45, '#ffffff55');
+  gradient.addColorStop(1, '#ffffff00');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, 64, 64);
+  const glowTexture = new THREE.CanvasTexture(glowCanvas);
+
+  const vector = (x, y, z) => new THREE.Vector3(x, y, z);
+
+  function glow(color, size = .5) {
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: glowTexture,
+      color,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false
+    }));
+    sprite.scale.setScalar(size);
+    return sprite;
+  }
+
+  function box(parent, size, position, color = C.metal, emissive = false) {
+    const material = new THREE.MeshStandardMaterial({
+      color,
+      metalness: .55,
+      roughness: .38,
+      emissive: emissive ? color : 0,
+      emissiveIntensity: emissive ? 1.2 : 0
+    });
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
+    mesh.position.set(...position);
+    parent.add(mesh);
+    return mesh;
+  }
+
+  function outline(mesh, color) {
+    mesh.add(new THREE.LineSegments(
+      new THREE.EdgesGeometry(mesh.geometry),
+      new THREE.LineBasicMaterial({color, transparent:true, opacity:.4})
+    ));
+  }
+
+  const nodes = {};
+  const pickable = [];
+  const leds = [];
+
+  function baseNode(id, position, labelHeight, data, color) {
+    const group = new THREE.Group();
+    group.position.set(...position);
+    group.userData.nodeId = id;
+    scene.add(group);
+    pickable.push(group);
+
+    const platform = box(group, [2.8,.12,2.1], [0,.06,0], 0x112031);
+    outline(platform, color);
+
+    const label = document.createElement('button');
+    label.className = 'node-label';
+    label.setAttribute('aria-label', `Inspect ${data.name}`);
+    const title = document.createElement('strong');
+    const subtitle = document.createElement('span');
+    title.textContent = data.name;
+    subtitle.textContent = data.short;
+    label.append(title, subtitle);
+    $('labels').append(label);
+    label.addEventListener('click', () => selectNode(id));
+
+    nodes[id] = {group, label, labelHeight, ...data};
+    return group;
+  }
+
+  // ============================================================
+  // NODE DEFINITION: DC01
+  // Domain controller; Windows Server 2022 from the repository.
+  // ============================================================
+  const dc = baseNode('DC01', [-4,0,1.2], 3.65, {
+    name: 'DC01',
+    host: 'DC01',
+    short: '192.168.10.10',
+    ip: '192.168.10.10',
+    os: 'Windows Server 2022',
+    role: 'Domain controller',
+    domain: 'adlab.local',
+    services: ['AD DS', 'DNS', 'Group Policy'],
+    note: 'Static /24 address. Directory and DNS authority for adlab.local. Only domain controller in this topology.'
+  }, C.green);
+
+  const rack = box(dc, [1.65,2.8,1.3], [0,1.55,0]);
+  outline(rack, C.blue);
+  for (let i = 0; i < 6; i++) {
+    box(dc, [1.39,.32,.08], [0,.45+i*.41,.69], 0x223a4e);
+    box(dc, [.7,.035,.02], [-.17,.45+i*.41,.74], 0x07121c);
+    const led = glow(C.green, .13);
+    led.position.set(.54, .45+i*.41, .76);
+    dc.add(led);
+  }
+  box(dc, [.08,2.6,.07], [-.69,1.55,.72], 0x36516a);
+
+  // ============================================================
+  // NODE DEFINITION: CL01
+  // Domain-joined Windows 11 workstation.
+  // ============================================================
+  const client = baseNode('CL01', [4,0,1.2], 2.9, {
+    name: 'CL01',
+    host: 'CL01',
+    short: '192.168.10.20',
+    ip: '192.168.10.20',
+    os: 'Windows 11',
+    role: 'Domain-joined workstation',
+    domain: 'adlab.local',
+    services: ['DNS Client', 'Netlogon', 'Group Policy Client'],
+    note: 'Uses DC01 (192.168.10.10) for DNS. GPO demo references the repository’s Map Sales Drive policy.'
+  }, C.blue);
+
+  box(client, [.7,.12,.5], [-.3,.23,0]);
+  box(client, [.12,.6,.12], [-.3,.55,0]);
+
+  const monitor = box(client, [1.8,1.15,.17], [-.3,1.35,0]);
+  outline(monitor, C.blue);
+  box(client, [1.6,.94,.025], [-.3,1.35,.1], 0x0b456a, true);
+
+  for (let x = 0; x < 2; x++) {
+    for (let y = 0; y < 2; y++) {
+      box(client, [.19,.19,.012],
+        [-.42+x*.23,1.23+y*.23,.12], C.blue, true);
+    }
+  }
+
+  const tower = box(client, [.52,1.2,.8], [.98,.73,0]);
+  outline(tower, 0x456986);
+  box(client, [.1,.04,.025], [.98,1.18,.42], C.green, true);
+  const keyboard = box(client, [1.4,.06,.44], [-.3,.22,.75], 0x2b4459);
+  outline(keyboard, 0x466b86);
+
+  // ============================================================
+  // NODE DEFINITION: virtual firewall/router
+  // Addressing is intentionally unspecified, not invented.
+  // ============================================================
+  const firewall = baseNode('FW01', [0,0,-2.5], 1.8, {
+    name: 'FIREWALL',
+    host: 'FW01 (visual alias)',
+    short: 'Virtual router / firewall',
+    ip: 'Not specified',
+    os: 'Virtual appliance (unspecified)',
+    role: 'Lab gateway / firewall',
+    domain: 'Not domain-joined',
+    services: ['Routing (simulated)', 'NAT (simulated)', 'Firewall (simulated)'],
+    note: 'Requested topology extension. No real gateway IP, operating system, or firewall configuration is assumed.'
+  }, C.green);
+
+  const appliance = box(firewall, [2,.65,1], [0,.58,0], 0x294153);
+  outline(appliance, C.green);
+  for (let i = 0; i < 5; i++) {
+    box(firewall, [.2,.16,.025], [-.68+i*.33,.57,.52], 0x050d15);
+    const led = glow(i === 4 ? C.blue : C.green, .15);
+    led.position.set(-.68+i*.33, .78, .54);
+    firewall.add(led);
+    leds.push(led);
+  }
+
+  // ============================================================
+  // NODE DEFINITION: internet cloud
+  // External network, not a managed machine.
+  // ============================================================
+  const cloud = baseNode('INET', [0,0,-7.1], 3.2, {
+    name: 'INTERNET',
+    host: 'N/A — external network',
+    short: 'Simulated WAN',
+    ip: 'N/A — external network',
+    os: 'N/A',
+    role: 'Internet cloud',
+    domain: 'External',
+    services: ['WAN connectivity (simulated)'],
+    note: 'Conceptual internet endpoint. All traffic is generated locally; the twin never contacts your lab.'
+  }, C.blue);
+
+  const cloudMaterial = new THREE.MeshStandardMaterial({
+    color: 0x86bfdb,
+    emissive: 0x164d72,
+    emissiveIntensity: .65,
+    metalness: .1,
+    roughness: .65
+  });
+  [
+    [-.85,1.25,0,.65],
+    [0,1.65,0,.9],
+    [.85,1.3,0,.65],
+    [0,1.05,.15,.75]
+  ].forEach(([x,y,z,r]) => {
+    const puff = new THREE.Mesh(
+      new THREE.SphereGeometry(r, 24, 16), cloudMaterial
+    );
+    puff.position.set(x,y,z);
+    cloud.add(puff);
+  });
+
+  // ============================================================
+  // NETWORK LINKS
+  // Shared LAN bus is a connector, not an additional machine.
+  // ============================================================
+  const D = vector(-4,.25,1.2);
+  const J = vector(0,.25,1.2);
+  const L = vector(4,.25,1.2);
+  const F = vector(0,.25,-2.5);
+  const W = vector(0,.25,-7.1);
+
+  function path(points) {
+    const curve = new THREE.CurvePath();
+    for (let i = 1; i < points.length; i++) {
+      curve.add(new THREE.LineCurve3(points[i-1], points[i]));
+    }
+    return curve;
+  }
+
+  function link(points, color) {
+    const curve = path(points);
+    const group = new THREE.Group();
+
+    const core = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, 40, .022, 6, false),
+      new THREE.MeshBasicMaterial({color})
+    );
+    const halo = new THREE.Mesh(
+      new THREE.TubeGeometry(curve, 40, .1, 6, false),
+      new THREE.MeshBasicMaterial({
+        color,
+        transparent: true,
+        opacity: .1,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending
+      })
+    );
+    group.add(core, halo);
+    scene.add(group);
+
+    const packets = Array.from({length:5}, (_, i) => {
+      const p = glow(color, .24);
+      scene.add(p);
+      return {sprite:p, offset:i/5};
+    });
+    return {curve, core, halo, packets};
+  }
+
+  const dcLink = link([D,J], C.green);
+  const clientLink = link([J,L], C.green);
+  const uplink = link([J,F], C.green);
+  const wanLink = link([F,W], C.blue);
+  const links = [dcLink, clientLink, uplink, wanLink];
+
+  const healthRoute = path([D,J,L]);
+  const attackRoute = path([L,J,D]);
+
+  const selection = new THREE.Mesh(
+    new THREE.RingGeometry(1.65, 1.7, 64),
+    new THREE.MeshBasicMaterial({
+      color:C.blue, transparent:true, opacity:.8, side:THREE.DoubleSide
+    })
+  );
+  selection.rotation.x = -Math.PI/2;
+  selection.position.y = .14;
+  scene.add(selection);
+
+  const state = {
+    isolated: false,
+    failed: 0,
+    health: false,
+    gpo: false,
+    attack: null,
+    selected: 'DC01'
+  };
+  const effects = [];
+
+  function selectNode(id, announce = true) {
+    state.selected = id;
+    const n = nodes[id];
+    $('node-name').textContent = n.name;
+
+    for (const key of ['host','ip','os','role','domain']) {
+      $(`node-${key}`).textContent = n[key];
+    }
+
+    $('node-note').textContent = n.note;
+    $('services').replaceChildren();
+    for (const service of n.services) {
+      const tag = document.createElement('span');
+      tag.className = 'chip';
+      tag.textContent = service;
+      $('services').append(tag);
+    }
+
+    const isolated = id === 'CL01' && state.isolated;
+    $('node-status').textContent = isolated
+      ? '● ISOLATED / SIMULATED'
+      : '● ONLINE / SIMULATED';
+    $('node-status').style.color = isolated ? 'var(--red)' : 'var(--green)';
+
+    selection.position.set(n.group.position.x, .14, n.group.position.z);
+    Object.entries(nodes).forEach(([key,node]) => {
+      node.label.setAttribute('aria-pressed', String(key === id));
+    });
+    document.querySelectorAll('[data-node]').forEach(b => {
+      b.setAttribute('aria-pressed', String(b.dataset.node === id));
+    });
+
+    if (announce) log(`Inspector selected: ${n.name}.`);
+  }
+
+  function syncControls() {
+    $('health').disabled = state.isolated || state.health;
+    $('attack').disabled = state.isolated || !!state.attack;
+    $('gpo').disabled = state.isolated || state.gpo;
+    $('isolate').textContent = state.isolated ? 'Reconnect CL01' : 'Isolate CL01';
+    $('link-status').textContent = state.isolated ? 'Isolated' : 'Connected';
+    $('link-status').style.color = state.isolated ? 'var(--red)' : 'var(--green)';
+    nodes.CL01.label.classList.toggle('isolated', state.isolated);
+    nodes.CL01.label.lastElementChild.textContent = state.isolated
+      ? '192.168.10.20 · ISOLATED'
+      : '192.168.10.20';
+  }
+
+  function feedback(message, level = 'info') {
+    $('action-status').textContent = message;
+    log(message, level);
+  }
+
+  function clientAvailable(action) {
+    if (!state.isolated) return true;
+    feedback(`${action} blocked: CL01 is isolated.`, 'warn');
+    return false;
+  }
+
+  function pulse(curve, color, duration, onComplete = () => {}, wave = false) {
+    const sprite = glow(color, wave ? 1.1 : .55);
+    scene.add(sprite);
+    let ring = null;
+
+    if (wave) {
+      ring = new THREE.Mesh(
+        new THREE.RingGeometry(.23, .29, 40),
+        new THREE.MeshBasicMaterial({
+          color,
+          transparent: true,
+          opacity: .8,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        })
+      );
+      ring.rotation.x = -Math.PI/2;
+      scene.add(ring);
+    }
+
+    effects.push({curve, sprite, ring, duration, elapsed:0, onComplete});
+  }
+
+  function removeEffect(effect) {
+    scene.remove(effect.sprite);
+    effect.sprite.material.dispose();
+    if (effect.ring) {
+      scene.remove(effect.ring);
+      effect.ring.geometry.dispose();
+      effect.ring.material.dispose();
+    }
+  }
+
+  // ============================================================
+  // STUBBED ACTION: checkReplicationHealth()
+  // Replace with your backend health API, then visualize its result.
+  // Single-DC AD replication is N/A; this requested green pulse
+  // represents a successful client-connectivity demo.
+  // ============================================================
+  function checkReplicationHealth() {
+    if (!clientAvailable('Health check')) return;
+    if (state.health) {
+      feedback('Health check already running.', 'warn');
+      return;
+    }
+
+    state.health = true;
+    syncControls();
+    feedback('Checking DC01 → CL01 connectivity (simulation)…');
+
+    pulse(healthRoute, C.green, 1.7, () => {
+      state.health = false;
+      syncControls();
+      feedback(
+        'HEALTHY — simulated client connectivity. AD replication: N/A (one DC).',
+        'good'
+      );
+    }, true);
+  }
+
+  // ============================================================
+  // STUBBED ACTION: simulateBruteForceLogons()
+  // Visual simulation only; sends no authentication requests.
+  // Synthetic 4625-like events do not implement the repository's
+  // account-lockout policy.
+  // ============================================================
+  function simulateBruteForceLogons() {
+    if (!clientAvailable('Logon simulation')) return;
+    if (state.attack) {
+      feedback('Logon simulation already running.', 'warn');
+      return;
+    }
+
+    state.attack = {sent:0, arrived:0, elapsed:0};
+    syncControls();
+    feedback('Started 24 synthetic failed logons: CL01 → DC01.', 'warn');
+  }
+
+  // ============================================================
+  // STUBBED ACTION: isolateClient()
+  // Replace with your firewall / hypervisor isolation API.
+  // Idempotent isolation cancels in-flight client traffic and
+  // pending client results.
+  // ============================================================
+  function isolateClient() {
+    if (state.isolated) {
+      feedback('CL01 is already isolated.', 'warn');
+      return;
+    }
+
+    const pending = state.health || state.gpo || !!state.attack;
+    state.isolated = true;
+    state.health = false;
+    state.gpo = false;
+    state.attack = null;
+
+    effects.forEach(removeEffect);
+    effects.length = 0;
+    clientLink.core.material.color.setHex(C.red);
+    clientLink.halo.material.color.setHex(C.red);
+    clientLink.packets.forEach(p => p.sprite.visible = false);
+
+    syncControls();
+    selectNode(state.selected, false);
+    feedback('CL01 isolated. Client link disabled; packet flow stopped.', 'warn');
+
+    if (pending) {
+      log('Pending client operations and in-flight simulated logons canceled.', 'warn');
+    }
+  }
+
+  // ============================================================
+  // STUBBED ACTION: reconnectClient()
+  // Companion hook for restoring the client after isolation.
+  // ============================================================
+  function reconnectClient() {
+    if (!state.isolated) {
+      feedback('CL01 is already connected.');
+      return;
+    }
+
+    state.isolated = false;
+    clientLink.core.material.color.setHex(C.green);
+    clientLink.halo.material.color.setHex(C.green);
+    syncControls();
+    selectNode(state.selected, false);
+    feedback('CL01 reconnected. Simulated LAN traffic resumed.', 'good');
+  }
+
+  // ============================================================
+  // STUBBED ACTION: pushGPOUpdate()
+  // Replace with an authorized remote Group Policy refresh API.
+  // A real refresh is client policy retrieval/application,
+  // represented here by a blue DC01 → CL01 wave.
+  // ============================================================
+  function pushGPOUpdate() {
+    if (!clientAvailable('GPO update')) return;
+    if (state.gpo) {
+      feedback('GPO update already running.', 'warn');
+      return;
+    }
+
+    state.gpo = true;
+    syncControls();
+    feedback('GPO refresh queued: DC01 → CL01 (simulation).');
+
+    pulse(healthRoute, C.blue, 2.3, () => {
+      state.gpo = false;
+      syncControls();
+      feedback(
+        'GPO refresh complete on CL01 — Map Sales Drive demo applied.',
+        'good'
+      );
+    }, true);
+  }
+
+  // Public integration hooks, callable from your own code or the console.
+  Object.assign(window, {
+    checkReplicationHealth,
+    simulateBruteForceLogons,
+    isolateClient,
+    reconnectClient,
+    pushGPOUpdate
+  });
+
+  $('health').onclick = checkReplicationHealth;
+  $('attack').onclick = simulateBruteForceLogons;
+  $('isolate').onclick = () => state.isolated
+    ? reconnectClient()
+    : isolateClient();
+  $('gpo').onclick = pushGPOUpdate;
+  $('reset-view').onclick = () => {
+    resetView();
+    log('Camera reset.');
+  };
+
+  document.querySelectorAll('[data-node]').forEach(b => {
+    b.disabled = false;
+    b.onclick = () => selectNode(b.dataset.node);
+  });
+  $('isolate').disabled = false;
+  $('reset-view').disabled = false;
+
+  // ============================================================
+  // INTERACTION: raycast selection; ignore drags and multi-touch.
+  // ============================================================
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  const activePointers = new Set();
+  let down = null;
+
+  renderer.domElement.addEventListener('pointerdown', e => {
+    activePointers.add(e.pointerId);
+    if (activePointers.size > 1) {
+      down = null;
+      return;
+    }
+    if (e.button === 0) {
+      down = {id:e.pointerId, x:e.clientX, y:e.clientY, moved:false};
+    }
+  });
+
+  renderer.domElement.addEventListener('pointermove', e => {
+    if (down && Math.hypot(e.clientX-down.x, e.clientY-down.y) > 6) {
+      down.moved = true;
+    }
+  });
+
+  window.addEventListener('pointerup', e => {
+    activePointers.delete(e.pointerId);
+    if (!down || down.id !== e.pointerId) return;
+    const click = !down.moved;
+    down = null;
+    if (!click) return;
+
+    const rect = renderer.domElement.getBoundingClientRect();
+    if (
+      e.clientX < rect.left || e.clientX > rect.right ||
+      e.clientY < rect.top || e.clientY > rect.bottom
+    ) return;
+
+    pointer.set(
+      (e.clientX-rect.left)/rect.width*2-1,
+      -(e.clientY-rect.top)/rect.height*2+1
+    );
+    raycaster.setFromCamera(pointer, camera);
+    const hit = raycaster.intersectObjects(pickable, true)[0];
+    if (hit) {
+      let object = hit.object;
+      while (object && !object.userData.nodeId) object = object.parent;
+      if (object) selectNode(object.userData.nodeId);
+    }
+  });
+
+  window.addEventListener('pointercancel', e => {
+    activePointers.delete(e.pointerId);
+    down = null;
+  });
+
+  function resize() {
+    const w = viewport.clientWidth;
+    const h = viewport.clientHeight;
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+  }
+  new ResizeObserver(resize).observe(viewport);
+  resize();
+
+  // ============================================================
+  // ANIMATION: ambient traffic, action pulses, LEDs, floating labels.
+  // Simulation time pauses while the tab is inactive.
+  // ============================================================
+  const projected = new THREE.Vector3();
+  let previous = performance.now();
+  let elapsed = 0;
+  let running = true;
+
+  function animate(now) {
+    if (!running) return;
+    requestAnimationFrame(animate);
+
+    const dt = Math.min((now-previous)/1000, .05);
+    previous = now;
+    elapsed += dt;
+    controls.update();
+
+    // Alternate packet directions for background LAN/WAN traffic.
+    links.forEach((connection, i) => {
+      connection.packets.forEach(({sprite,offset}, j) => {
+        sprite.visible = !(connection === clientLink && state.isolated);
+        const progress = (elapsed*(.2+i*.025)+offset)%1;
+        sprite.position.copy(
+          connection.curve.getPoint(j%2 ? 1-progress : progress)
+        );
+        sprite.position.y += .07;
+      });
+    });
+
+    leds.forEach((led, i) => {
+      led.material.opacity =
+        .25 + .75*Math.pow(Math.sin(elapsed*(3+i)+i), 2);
+    });
+
+    // Bounded synthetic logon burst; counters increase on packet arrival.
+    if (state.attack) {
+      const attack = state.attack;
+      attack.elapsed += dt;
+
+      if (attack.sent < 24 && attack.elapsed >= .15) {
+        attack.elapsed -= .15;
+        attack.sent++;
+
+        pulse(attackRoute, C.red, .65, () => {
+          if (state.attack !== attack) return;
+          state.failed++;
+          attack.arrived++;
+          $('failures').textContent = state.failed;
+          log(
+            `SIM 4625 | DC01 | Failed logon from CL01 (192.168.10.20) | total=${state.failed}`,
+            'bad'
+          );
+
+          if (attack.arrived === 24) {
+            state.attack = null;
+            syncControls();
+            feedback('Logon simulation finished: 24 failures recorded.', 'warn');
+          }
+        });
+      }
+    }
+
+    for (let i = effects.length-1; i >= 0; i--) {
+      const effect = effects[i];
+      effect.elapsed += dt;
+      const t = Math.min(effect.elapsed/effect.duration, 1);
+
+      effect.sprite.position.copy(effect.curve.getPoint(t));
+      effect.sprite.position.y += .18;
+
+      if (effect.ring) {
+        effect.ring.position.copy(effect.sprite.position);
+        effect.ring.scale.setScalar(1 + Math.sin(t*Math.PI)*2.5);
+      }
+
+      if (t >= 1) {
+        effects.splice(i, 1);
+        removeEffect(effect);
+        effect.onComplete();
+      }
+    }
+
+    selection.material.opacity = .5 + .25*Math.sin(elapsed*2);
+    camera.updateMatrixWorld();
+
+    // DOM labels remain sharp while following their 3D node positions.
+    Object.values(nodes).forEach(n => {
+      projected.copy(n.group.position);
+      projected.y += n.labelHeight;
+      projected.project(camera);
+
+      const visible =
+        projected.z > -1 && projected.z < 1 &&
+        Math.abs(projected.x) < 1.1 &&
+        Math.abs(projected.y) < 1.1;
+
+      n.label.hidden = !visible;
+      if (visible) {
+        n.label.style.left =
+          `${(projected.x*.5+.5)*viewport.clientWidth}px`;
+        n.label.style.top =
+          `${(-projected.y*.5+.5)*viewport.clientHeight}px`;
+      }
+    });
+
+    renderer.render(scene, camera);
+  }
+
+  renderer.domElement.addEventListener('webglcontextlost', e => {
+    e.preventDefault();
+    running = false;
+    $('loading').hidden = false;
+    $('loading').textContent =
+      'WebGL context lost. Reload to restart the simulation.';
+    document.querySelectorAll('button').forEach(b => b.disabled = true);
+    log('WebGL context lost. Reload required.', 'bad');
+  });
+
+  selectNode('DC01', false);
+  syncControls();
+  $('loading').hidden = true;
+  $('action-status').textContent = 'Ready. Select an action to simulate.';
+
+  log('Twin initialized: adlab.local / 192.168.10.0/24.', 'good');
+  log('DC01: AD DS, DNS, Group Policy. CL01: Windows 11, domain-joined.');
+  log('Virtual gateway and WAN are illustrative extensions. All events are simulated.');
+
+  requestAnimationFrame(animate);
+}
+</script>
+</body>
+</html>
